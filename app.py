@@ -34,10 +34,26 @@ app.add_middleware(
 model = None
 tokenizer = None
 
-# Paths for simulation
-IVERILOG_PATH = r"C:\iverilog\bin\iverilog"
-VVP_PATH = r"C:\iverilog\bin\vvp"
-GTKWAVE_PATH = r"C:\iverilog\gtkwave\bin\gtkwave.exe"
+
+# Paths for simulation (environment-aware for Windows/Linux compatibility)
+import platform
+import shutil
+
+# Detect if we're in a Docker/Linux environment
+IS_LINUX = platform.system() == "Linux"
+
+# Set paths based on environment
+if IS_LINUX:
+    # In Docker/Linux, tools are in system PATH
+    IVERILOG_PATH = shutil.which("iverilog") or "iverilog"
+    VVP_PATH = shutil.which("vvp") or "vvp"
+    GTKWAVE_PATH = shutil.which("gtkwave") or "gtkwave"
+else:
+    # Windows-specific paths
+    IVERILOG_PATH = r"C:\iverilog\bin\iverilog"
+    VVP_PATH = r"C:\iverilog\bin\vvp"
+    GTKWAVE_PATH = r"C:\iverilog\gtkwave\bin\gtkwave.exe"
+
 
 # Pydantic models for request/response
 class VerilogPrompt(BaseModel):

@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  verilog-generator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: verilog-generator:latest
+    container_name: verilog-api
+
+    # GPU support (requires nvidia-docker)
+    runtime: nvidia
+
+    # Environment variables
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - TRANSFORMERS_CACHE=/app/model_cache
+      - HF_HOME=/app/model_cache
+      - TORCH_HOME=/app/model_cache
+
+    # Port mapping
+    ports:
+      - "8000:8000"
+
+    # Volume mounts for persistence
+    volumes:
+      - model_cache:/app/model_cache
+      - ./frontend/public/images:/app/frontend/public/images
+      - outputs:/app/outputs
+      - logs:/app/logs
+
+    # Resource limits (adjust based on your GPU)
+    deploy:
+      resources:
+        limits:
+          memory: 16G
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+    # Health check
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes for persistence
+volumes:
+  model_cache:
+    driver: local
+  outputs:
+    driver: local
+  logs:
+    driver: local
